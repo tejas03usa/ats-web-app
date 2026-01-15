@@ -6,6 +6,10 @@ import re
 import urllib.parse
 from openai import OpenAI
 from xml.sax.saxutils import escape as xml_escape
+from dotenv import load_dotenv
+
+# Load .env variables (if running locally with .env)
+load_dotenv()
 
 # File Processing
 import PyPDF2 as pdf
@@ -43,10 +47,15 @@ if 'search_config' not in st.session_state:
 # --- Helper Functions ---
 
 def check_password():
-    """Checks the password against Streamlit Secrets."""
+    """Checks the password against Streamlit Secrets or defaults for local dev."""
     def password_entered():
         # Check if password matches strict secret or default dev password
-        expected_password = st.secrets.get("APP_PASSWORD", "admin123") 
+        # Use try/except to handle missing secrets.toml locally
+        try:
+            expected_password = st.secrets.get("APP_PASSWORD", "admin123")
+        except Exception:
+            expected_password = "admin123" # Fallback for local dev if no secrets
+            
         if st.session_state["password_input"] == expected_password:
             st.session_state.authenticated = True
             del st.session_state["password_input"]
@@ -154,11 +163,26 @@ def main():
         st.title("🧰 Toolkit Setup")
         
         # API Key Handling
-        api_key = st.text_input("OpenAI API Key", type="password", help="Enter your sk-... key")
+        user_input_key = st.text_input("OpenAI API Key", type="password", help="Enter your sk-... key")
         
-        # Try to load from secrets if not entered
+        # Logic to determine effective API Key
+        # Priority: 1. User Input -> 2. Streamlit Secrets -> 3. Local .env
+        api_key = user_input_key
+        
         if not api_key:
-            api_key = st.secrets.get("OPENAI_API_KEY", "")
+            try:
+                api_key = st.secrets.get("OPENAI_API_KEY", "")
+            except Exception:
+                pass # Secrets not found
+        
+        if not api_key:
+            api_key = os.getenv("OPENAI_API_KEY", "")
+
+        # UI Feedback for Key Status
+        if api_key and not user_input_key:
+            st.success("✅ Loaded API Key from Secrets/Env")
+        elif not api_key:
+            st.warning("⚠️ No API Key found. Please enter one.")
         
         st.divider()
         
@@ -181,7 +205,7 @@ def main():
     st.title("🚀 Smart Career Toolkit")
     
     if not api_key:
-        st.warning("Please enter your OpenAI API Key in the sidebar to start.")
+        st.info("👈 Please enter your OpenAI API Key in the sidebar to unlock the tools.")
         st.stop()
 
     # Tabs
