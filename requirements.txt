@@ -1,0 +1,7 @@
+streamlit
+openai
+PyPDF2
+python-docx
+reportlab
+python-dotenv
+duckduckgo-search
