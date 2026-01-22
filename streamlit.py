@@ -29,8 +29,6 @@ st.set_page_config(
 )
 
 # --- Session State Initialization ---
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
 if 'resume_text' not in st.session_state:
     st.session_state.resume_text = ""
 if 'analysis_result' not in st.session_state:
@@ -45,28 +43,6 @@ if 'search_config' not in st.session_state:
     st.session_state.search_config = None
 
 # --- Helper Functions ---
-
-def check_password():
-    """Checks the password against Streamlit Secrets or defaults for local dev."""
-    def password_entered():
-        # Check if password matches strict secret or default dev password
-        # Use try/except to handle missing secrets.toml locally
-        try:
-            expected_password = st.secrets.get("APP_PASSWORD", "admin123")
-        except Exception:
-            expected_password = "admin123" # Fallback for local dev if no secrets
-            
-        if st.session_state["password_input"] == expected_password:
-            st.session_state.authenticated = True
-            del st.session_state["password_input"]
-        else:
-            st.session_state.authenticated = False
-            st.error("😕 Incorrect Password")
-
-    if not st.session_state.authenticated:
-        st.text_input("Enter App Password to Access", type="password", on_change=password_entered, key="password_input")
-        return False
-    return True
 
 def extract_text_from_pdf(uploaded_file):
     text = ""
@@ -155,9 +131,6 @@ def create_pdf(content, title_prefix):
 # --- Main App ---
 
 def main():
-    if not check_password():
-        st.stop() # Stop execution if not authenticated
-
     # Sidebar Configuration
     with st.sidebar:
         st.title("🧰 Toolkit Setup")
